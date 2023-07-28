@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Reset System76-Scheduler Foreground Process
+dbus-send --system --dest=com.system76.Scheduler \
+    /com/system76/Scheduler \
+    com.system76.Scheduler.SetForegroundProcess \
+    uint32:0 || true
+
+
 # Fix intel color corruption
 # might come with some performance degradation but is better than a corrupted
 # color image
@@ -25,9 +32,6 @@ export GAMESCOPE_PATCHED_EDID_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/gamescope/
 # Set up first time bootstrap status
 export STEAM_BOOTSTRAP_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/gamescope/bootstrap.cfg"
 
-# Set resolution values
-usr/bin/gamescope-resolution-configurator
-
 # Make path to gamescope mode save file.
 mkdir -p "$(dirname "$GAMESCOPE_MODE_SAVE_FILE")"
 touch "$GAMESCOPE_MODE_SAVE_FILE"
@@ -47,6 +51,12 @@ export STEAM_GAMESCOPE_HAS_TEARING_SUPPORT=1
 
 # Enable tearing controls in steam
 export STEAM_GAMESCOPE_TEARING_SUPPORTED=1
+
+# Enable VRR controls in steam
+export STEAM_GAMESCOPE_VRR_SUPPORTED=1
+
+# When set to 1, a toggle will show up in the steamui to control whether dynamic refresh rate is applied to the steamui
+export STEAM_GAMESCOPE_DYNAMIC_REFRESH_IN_STEAM_SUPPORTED=0
 
 # There is no way to set a color space for an NV12
 # buffer in Wayland. And the color management protocol that is
@@ -126,6 +136,8 @@ fi
 
 ulimit -n 524288
 
+export XCURSOR_THEME=steam
+
 # Source device quirks if exists
 if [ -f /usr/share/gamescope-session/device-quirks ]; then
   . /usr/share/gamescope-session/device-quirks
@@ -189,8 +201,6 @@ if [ -z "$GAMESCOPECMD" ] ; then
     RESOLUTION=""
     if [ -n "$GAMESCOPE_SCREEN_WIDTH" ] && [ -n "$GAMESCOPE_SCREEN_HEIGHT" ] ; then
         RESOLUTION="-W $GAMESCOPE_SCREEN_WIDTH -H $GAMESCOPE_SCREEN_HEIGHT"
-    else
-        RESOLUTION="-W 1200 -H 800"
     fi
     GAMESCOPECMD="/usr/bin/gamescope \
         $CURSOR \
@@ -207,8 +217,8 @@ if [ -z "$GAMESCOPECMD" ] ; then
     if [[ $GAMESCOPE_HDR == 1 ]]; then
     	export STEAM_GAMESCOPE_HDR_SUPPORTED=1
     	export ENABLE_GAMESCOPE_WSI=1 
-	export DXVK_HDR=1
-	GAMESCOPECMD+=" --hdr-enabled --hdr-itm-enable"
+	    export DXVK_HDR=1
+	    GAMESCOPECMD+=" --hdr-enabled --hdr-itm-enable"
     fi
 else
     # Add socket and stats read
@@ -294,6 +304,13 @@ if command -v /usr/bin/ibus-daemon > /dev/null; then
     /usr/bin/ibus-daemon -d -r --panel=disable --emoji-extension=disable
 fi
 
+if [[ ":Jupiter:" =~ "$(cat /sys/devices/virtual/dmi/id/product_name)" ]]; then
+    systemd-inhibit --what=handle-suspend-key:handle-power-key:handle-hibernate-key --who=gamescope-session --why="gamescope-session handles power button events" sleep infinity &
+    inhibitor_pid="$!"
+    /usr/lib/hwsupport/power-button-handler.py &
+    handler_pid="$!"
+fi
+
 # If we have mangoapp binary start it
 if command -v mangoapp > /dev/null; then
     mangoapp > "${HOME}"/.mangoapp-stdout.log 2>&1 &
@@ -344,7 +361,7 @@ for job in $(jobs -p); do
 	# Warn about unexpected things
 	if [[ $ret != 127 && $job = "$gamescope_pid" ]]; then
 		echo >&2 "gamescope-session: gamescope timed out while exiting, killing"
-	elif [[ $ret != 127 && $job != "$sleep_pid" ]]; then
+	elif [[ $ret != 127 && $job != "$sleep_pid" && $job != "$inhibitor_pid" && $job != "$handler_pid" ]]; then
 		echo >&2 "gamescope-session: unexpected background pid $job at teardown: "
 		# spew some debug about it
 		ps -p "$job" >&2
