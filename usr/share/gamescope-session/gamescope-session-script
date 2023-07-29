@@ -153,6 +153,7 @@ fi
 
 
 if [[ $GAMESCOPE_DYNAMIC_REFRESH == 1 ]]
+then
     # When set to 1, a toggle will show up in the steamui to control whether dynamic refresh rate is applied to the steamui
     export STEAM_GAMESCOPE_DYNAMIC_REFRESH_IN_STEAM_SUPPORTED=1
 fi
