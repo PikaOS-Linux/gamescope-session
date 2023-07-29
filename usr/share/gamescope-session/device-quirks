@@ -4,6 +4,20 @@
 SYS_ID="$(cat /sys/devices/virtual/dmi/id/product_name)"
 CPU_VENDOR="$(lscpu | grep "Vendor ID" | cut -d : -f 2 | xargs)"
 
+
+# Force load radv if amdvlk/vulkan-amdgpu or amdvlk-pro/vulkan-amdgpu-pro are loaded
+# official AMD drivers lock the drm to themselves which makes gamescope fail to load
+if vulkaninfo --summary | grep DRIVER_ID_AMD_PROPRIETARY
+then
+  export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/radeon_icd.i686.json:/usr/share/vulkan/icd.d/radeon_icd.x86_64.json"
+fi
+
+if vulkaninfo --summary | grep DRIVER_ID_AMD_OPEN_SOURCE
+then
+  export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/radeon_icd.i686.json:/usr/share/vulkan/icd.d/radeon_icd.x86_64.json"
+fi
+
+
 # avoid long start times on games when no nvidia gpu is available
 if command -v change-nvidia-icd > /dev/null; then
   if lspci | grep -i vga | grep -i nvidia > /dev/null; then
@@ -14,6 +28,7 @@ if command -v change-nvidia-icd > /dev/null; then
     change-nvidia-icd remove
   fi
 fi
+
 
 
 # OXP Devices

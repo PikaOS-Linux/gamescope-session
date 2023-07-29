@@ -1,0 +1,7 @@
+[Unit]
+Description=Monitor headphone connection in Linux
+[Service]
+ExecStart=/usr/bin/headphone-connection-monitor.sh
+Restart=always
+[Install]
+WantedBy=multi-user.target

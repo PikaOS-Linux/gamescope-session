@@ -5,8 +5,7 @@
 # Window managers sets this to wayland but apps using Gamescope must use x11
 export XDG_SESSION_TYPE=x11
 
-# Enable mangohud
-export MANGOHUD=1
+CPU="$(lscpu | grep 'Model name')"
 
 # Update the enviroment with DESKTOP_SESSION and all XDG variables
 dbus-update-activation-environment --systemd DESKTOP_SESSION `env | grep ^XDG_ | cut -d = -f 1`
@@ -22,9 +21,17 @@ systemctl --user unset-environment DISPLAY XAUTHORITY
 # If this shell script is killed then stop gamescope-session
 trap 'systemctl --user stop gamescope-session.service' HUP INT TERM
 
+# Audio hack for non-steamdeck devices
+if [[ -z $(echo $CPU | grep 'AMD Custom' | grep '0405') ]]; then
+	systemctl --user start headphone-connection-monitor.service
+fi
+
 # Start gamescope-session and wait
 systemctl --user --wait start gamescope-session.service &
 wait
+
+# stop the audio hack if it's running
+systemctl --user stop headphone-connection-monitor.service
 
 # Unset XDG_DESKTOP_PORTAL_DIR environment to allow desktop portals to work
 # again.
