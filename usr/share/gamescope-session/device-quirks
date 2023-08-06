@@ -4,20 +4,6 @@
 SYS_ID="$(cat /sys/devices/virtual/dmi/id/product_name)"
 CPU_VENDOR="$(lscpu | grep "Vendor ID" | cut -d : -f 2 | xargs)"
 
-
-# Force load radv if amdvlk/vulkan-amdgpu or amdvlk-pro/vulkan-amdgpu-pro are loaded
-# official AMD drivers lock the drm to themselves which makes gamescope fail to load
-if vulkaninfo --summary | grep DRIVER_ID_AMD_PROPRIETARY
-then
-  export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/radeon_icd.i686.json:/usr/share/vulkan/icd.d/radeon_icd.x86_64.json"
-fi
-
-if vulkaninfo --summary | grep DRIVER_ID_AMD_OPEN_SOURCE
-then
-  export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/radeon_icd.i686.json:/usr/share/vulkan/icd.d/radeon_icd.x86_64.json"
-fi
-
-
 # avoid long start times on games when no nvidia gpu is available
 if command -v change-nvidia-icd > /dev/null; then
   if lspci | grep -i vga | grep -i nvidia > /dev/null; then
@@ -28,8 +14,6 @@ if command -v change-nvidia-icd > /dev/null; then
     change-nvidia-icd remove
   fi
 fi
-
-
 
 # OXP Devices
 OXP_LIST="ONE XPLAYER:ONEXPLAYER 1 T08:ONEXPLAYER 1S A08:ONEXPLAYER 1S T08:ONEXPLAYER mini A07:ONEXPLAYER mini GA72:ONEXPLAYER mini GT72:ONEXPLAYER Mini Pro:ONEXPLAYER GUNDAM GA72:ONEXPLAYER 2 ARP23"
@@ -175,10 +159,14 @@ if [[ ":Jupiter:" =~ ":$SYS_ID:"  ]]; then
       --hide-cursor-delay 3000 \
       --fade-out-duration 200 "
   fi
-   export STEAM_DISPLAY_REFRESH_LIMITS=40,60
-   export STEAM_ENABLE_DYNAMIC_BACKLIGHT = "1";
-   export STEAM_ENABLE_FAN_CONTROL = "1";
-   export WINE_CPU_TOPOLOGY = "8:0,1,2,3,4,5,6,7";
+  # Set refresh rate range and enable refresh rate switching
+  export STEAM_DISPLAY_REFRESH_LIMITS=40,60
+  # Enables the adaptive brightness toggle
+  export STEAM_ENABLE_DYNAMIC_BACKLIGHT=1
+  # Allows the fan controller service to be toggled from gamemode
+  export STEAM_ENABLE_FAN_CONTROL=1
+  # Sets CPU topology for Steam Deck hardware
+  export WINE_CPU_TOPOLOGY=8:0,1,2,3,4,5,6,7
 fi
 
 if [[ ":ROG Ally RC71L_RC71L:" =~ ":$SYS_ID:"  ]]; then
