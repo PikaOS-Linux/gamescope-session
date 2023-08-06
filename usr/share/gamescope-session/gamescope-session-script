@@ -83,8 +83,8 @@ export SRT_URLOPEN_PREFER_STEAM=1
 export STEAM_DISABLE_AUDIO_DEVICE_SWITCHING=1
 
 # Enable support for xwayland isolation per-game in Steam
-# Disabled because it forces 800p
-#export STEAM_MULTIPLE_XWAYLANDS=1
+# Note a major side effect of this is it forces 800p by default on all games just like the steamdeck, which h isn't ideal but it's required 
+export STEAM_MULTIPLE_XWAYLANDS=1
 
 # We have the Mesa integration for the fifo-based dynamic fps-limiter
 export STEAM_GAMESCOPE_DYNAMIC_FPSLIMITER=1
